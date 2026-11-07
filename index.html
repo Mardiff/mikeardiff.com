@@ -1,0 +1,585 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mike Ardiff</title>
+<meta name="description" content="Mike Ardiff">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐍</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --forest: #1f3d2b;
+    --sage: #d3dba8;
+    --paper: #faf8f2;
+    --ink: #111;
+    --muted: #5c6259;
+    --gator-w: 260px;
+  }
+  @media (max-width: 640px) { :root { --gator-w: 170px; } }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: Figtree, ui-sans-serif, system-ui, sans-serif;
+    font-size: 1.125rem;
+    line-height: 1.7;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1 {
+    position: fixed;
+    top: 24px; left: 24px;
+    margin: 0;
+    font-size: inherit;
+    font-weight: 700;
+    color: var(--forest);
+    z-index: 3;
+  }
+  @media (min-width: 641px) { h1 { top: 32px; left: 40px; } }
+
+  #stage { position: fixed; inset: 0; overflow: hidden; }
+  #gator { position: absolute; left: 0; top: 0; width: var(--gator-w); will-change: transform; }
+  #gator svg { display: block; width: 100%; height: auto; overflow: visible; }
+  #gator.flip svg { transform: scaleX(-1); }
+  #snake { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+
+  .caption {
+    position: fixed;
+    left: 24px; bottom: 20px;
+    margin: 0;
+    font-size: 0.8125rem;
+    color: var(--muted);
+    opacity: 0;
+    transition: opacity 1.4s ease;
+    z-index: 3;
+  }
+  @media (min-width: 641px) { .caption { left: 40px; bottom: 28px; } }
+  .caption.show { opacity: 1; }
+  .caption a { color: inherit; text-underline-offset: 2px; }
+
+  /* Gator motion (borrowed from the deceased's own site) */
+  .gator-body { animation: gator-bob .35s ease-in-out infinite alternate; }
+  .gator-tail { transform-box: fill-box; transform-origin: 100% 40%; animation: gator-wag .7s ease-in-out infinite alternate; }
+  .gator-leg  { transform-box: fill-box; transform-origin: 50% 8%; animation: gator-step .7s ease-in-out infinite alternate; }
+  .gator-leg-b { animation-delay: -.7s; }
+  #gator.panic .gator-leg  { animation-duration: .1s; }
+  #gator.panic .gator-leg-b { animation-delay: -.1s; }
+  #gator.panic .gator-tail { animation-duration: .12s; }
+  @keyframes gator-bob  { from { transform: translateY(0); } to { transform: translateY(-2px); } }
+  @keyframes gator-wag  { from { transform: rotate(-7deg); } to { transform: rotate(7deg); } }
+  @keyframes gator-step { from { transform: rotate(-24deg); } to { transform: rotate(24deg); } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .gator-body, .gator-tail, .gator-leg { animation: none; }
+    .caption { transition: none; }
+  }
+</style>
+</head>
+<body>
+<h1>Mike Ardiff</h1>
+
+<div id="stage">
+  <div id="gator" aria-hidden="true">
+    <svg viewBox="0 0 260 116">
+      <rect class="gator-leg gator-leg-b" x="86" y="80" width="14" height="28" rx="7" fill="#1f3d2b" opacity="0.7"/>
+      <rect class="gator-leg gator-leg-a" x="184" y="80" width="14" height="28" rx="7" fill="#1f3d2b" opacity="0.7"/>
+      <g class="gator-body">
+        <g class="gator-tail"><path d="M52 54 C34 54 16 64 2 80 C20 78 36 84 54 92 Z" fill="#1f3d2b"/></g>
+        <g fill="#d3dba8">
+          <polygon points="62,52 70,38 78,52"/><polygon points="84,52 92,36 100,52"/>
+          <polygon points="106,52 114,36 122,52"/><polygon points="128,52 136,37 144,52"/>
+          <polygon points="150,52 158,38 166,52"/>
+        </g>
+        <rect x="42" y="50" width="168" height="44" rx="22" fill="#1f3d2b"/>
+        <ellipse cx="126" cy="88" rx="70" ry="6" fill="#d3dba8"/>
+        <path d="M196 72 L252 70 L250 79 C235 86 214 86 196 85 Z" fill="#1f3d2b"/>
+        <path d="M194 50 C214 44 240 48 255 58 L255 68 C240 71 214 71 194 73 Z" fill="#1f3d2b"/>
+        <path d="M198 72 C220 74 240 71 254 68" stroke="#111" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <g fill="#faf8f2">
+          <polygon points="212,72.5 217,72.5 214.5,79"/><polygon points="226,72.5 231,72.5 228.5,79"/>
+          <polygon points="240,71 245,70.5 242.5,77"/>
+        </g>
+        <circle cx="249" cy="56" r="1.8" fill="#111"/>
+        <circle cx="208" cy="49" r="10" fill="#1f3d2b"/>
+        <circle cx="209" cy="49" r="6.5" fill="#faf8f2"/>
+        <circle cx="211" cy="49.5" r="3.2" fill="#111"/>
+      </g>
+      <rect class="gator-leg gator-leg-a" x="62" y="80" width="15" height="29" rx="7.5" fill="#1f3d2b"/>
+      <rect class="gator-leg gator-leg-b" x="162" y="80" width="15" height="29" rx="7.5" fill="#1f3d2b"/>
+    </svg>
+  </div>
+  <canvas id="snake" role="img" aria-label="A python that has recently eaten an alligator, slithering around"></canvas>
+</div>
+
+<p class="caption" id="caption">The gator from <a href="https://www.tylerpollack.com">tylerpollack.com</a> was last seen here.</p>
+
+<script>
+(() => {
+  const cv = document.getElementById('snake');
+  const ctx = cv.getContext('2d');
+  const gatorEl = document.getElementById('gator');
+  const caption = document.getElementById('caption');
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const COLOR = {
+    outline: '#3b2d18',
+    body: '#a07f49',
+    blotch: '#5a4526',
+    spot: '#c9aa6e',
+    mouth: '#7d2b2b',
+    tongue: '#c0392b',
+    fang: '#faf8f2',
+    eye: '#faf8f2',
+    pupil: '#111',
+    gator: '#1f3d2b',
+    muted: '#5c6259',
+  };
+
+  const SP = 2; // px between body sample points
+  const TAU = Math.PI * 2;
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const easeInOut = t => t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+  const wrapAngle = a => Math.atan2(Math.sin(a), Math.cos(a));
+
+  let W, H, pad, gw, gh, k, R, L, N;
+
+  const gator = { x: 0, y: 0, dir: 1, pause: 0, speed: 0, alive: true, ox: 0, oy: 0 };
+  const snake = {
+    x: 0, y: 0, th: Math.PI, phase: 0, hist: [],
+    state: 'wait', t: 0, eatT: 0, mouth: 0, tail: 0,
+    target: null, bulgeU: 0, bulgeA: 0, gulpT: -1, tongueT: 0,
+  };
+
+  function layout() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = innerWidth; H = innerHeight;
+    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    pad = W > 640 ? 40 : 24;
+    gw = gatorEl.offsetWidth || (W > 640 ? 260 : 170);
+    gh = gw * 116 / 260;
+    k = gw / 260;
+    R = 19 * k;          // body radius
+    L = 540 * k;         // body length (comfortably longer than the gator)
+    N = Math.round(L / SP);
+    gator.y = H / 2 - gh / 2;
+    gator.speed = Math.max(25, (W - 2 * pad - gw) / 8.8);
+    gator.x = clamp(gator.x, pad, Math.max(pad, W - pad - gw));
+  }
+
+  // ---------- gator ----------
+  function placeGator(extra = '') {
+    gatorEl.style.transform = `translate(${gator.x}px, ${gator.y}px)${extra}`;
+  }
+
+  function stepGator(dt) {
+    if (gator.pause > 0) { gator.pause -= dt; return; }
+    const min = pad, max = Math.max(pad, W - pad - gw);
+    gator.x += gator.dir * gator.speed * dt;
+    if (gator.x >= max) { gator.x = max; turnGator(-1); }
+    else if (gator.x <= min) { gator.x = min; turnGator(1); }
+    placeGator();
+  }
+
+  function turnGator(dir) {
+    gator.dir = dir;
+    gator.pause = 0.8;
+    gatorEl.classList.toggle('flip', dir < 0);
+  }
+
+  // Nearest point on the gator's centerline to (px, py), in page coords.
+  function gatorBite(px, py) {
+    const cy = gator.y + gh * 0.55;
+    const bx = clamp(px, gator.x + gw * 0.05, gator.x + gw * 0.97);
+    return { x: bx, y: cy };
+  }
+
+  // ---------- snake ----------
+  function spawnSnake() {
+    snake.x = W + R * 2;
+    snake.y = H / 2 + gh * 0.1;
+    snake.th = Math.PI;
+    snake.hist = [];
+    for (let d = L + 60; d >= 0; d -= 1) snake.hist.push({ x: snake.x + d, y: snake.y });
+  }
+
+  function bodyPoints() {
+    const pts = [{ x: snake.x, y: snake.y }];
+    let need = SP, px = snake.x, py = snake.y, i = snake.hist.length - 1;
+    while (i >= 0 && pts.length <= N) {
+      const q = snake.hist[i];
+      const dx = q.x - px, dy = q.y - py, d = Math.hypot(dx, dy);
+      if (d >= need) {
+        px += dx * need / d; py += dy * need / d;
+        pts.push({ x: px, y: py });
+        need = SP;
+      } else {
+        need -= d; px = q.x; py = q.y; i--;
+      }
+    }
+    return pts;
+  }
+
+  function headFrame() {
+    const pts = bodyPoints();
+    const a = pts[0], b = pts[Math.min(4, pts.length - 1)];
+    let dx = a.x - b.x, dy = a.y - b.y;
+    const m = Math.hypot(dx, dy) || 1;
+    dx /= m; dy /= m;
+    const Rh = R * 1.15;
+    const hx = a.x + dx * R * 0.35, hy = a.y + dy * R * 0.35;
+    return {
+      pts, dx, dy, Rh, hx, hy,
+      tipX: hx + dx * Rh * 1.3, tipY: hy + dy * Rh * 1.3,
+      gulletX: hx + dx * Rh * 0.4, gulletY: hy + dy * Rh * 0.4,
+    };
+  }
+
+  function steer(tx, ty, turnRate, dt) {
+    const want = Math.atan2(ty - snake.y, tx - snake.x);
+    const delta = wrapAngle(want - snake.th);
+    snake.th += clamp(delta, -turnRate * dt, turnRate * dt);
+  }
+
+  function slither(v, amp, dt) {
+    const wavelength = 150 * k;
+    snake.phase += v * dt / wavelength * TAU;
+    const heading = snake.th + amp * Math.sin(snake.phase);
+    snake.x += Math.cos(heading) * v * dt;
+    snake.y += Math.sin(heading) * v * dt;
+    const last = snake.hist[snake.hist.length - 1];
+    if (!last || Math.hypot(snake.x - last.x, snake.y - last.y) >= 1) {
+      snake.hist.push({ x: snake.x, y: snake.y });
+      const cap = Math.ceil(L) + 120;
+      if (snake.hist.length > cap) snake.hist.splice(0, snake.hist.length - cap);
+    }
+  }
+
+  function pickRoamTarget() {
+    snake.target = {
+      x: lerp(pad + 60 * k, W - pad - 60 * k, Math.random()),
+      y: lerp(90, H - 70, Math.random()),
+    };
+  }
+
+  function stepSnake(dt) {
+    snake.t += dt;
+    if (snake.gulpT >= 0) snake.gulpT += dt;
+
+    switch (snake.state) {
+      case 'wait':
+        if (snake.t > 2.2) snake.state = 'hunt';
+        break;
+
+      case 'hunt': {
+        const f = headFrame();
+        const bite = gatorBite(f.tipX, f.tipY);
+        const dist = Math.hypot(bite.x - f.tipX, bite.y - f.tipY);
+        const v = (dist > 220 * k ? 120 : 240) * k;
+        steer(bite.x, bite.y, 2.8, dt);
+        slither(v, 0.5 * clamp(dist / (180 * k), 0.15, 1), dt);
+        snake.mouth = clamp(1 - dist / (170 * k), 0, 1) * 0.55;
+        if (dist < R * 1.4) {
+          snake.state = 'eat';
+          snake.eatT = 0;
+          gator.ox = bite.x - gator.x;
+          gator.oy = bite.y - gator.y;
+          gatorEl.style.transformOrigin = `${gator.ox}px ${gator.oy}px`;
+          gatorEl.classList.add('panic');
+        }
+        break;
+      }
+
+      case 'eat': {
+        const e = (snake.eatT += dt);
+        const f = headFrame();
+        if (e < 0.3) {
+          snake.mouth = lerp(snake.mouth, 1, clamp(e / 0.3, 0, 1));
+        } else if (e < 1.05) {
+          snake.mouth = 1;
+          const p = easeInOut((e - 0.3) / 0.75);
+          const tx = lerp(0, f.gulletX - (gator.x + gator.ox), p);
+          const ty = lerp(0, f.gulletY - (gator.y + gator.oy), p);
+          const s = Math.max(0.001, 1 - p);
+          placeGator(` translate(${tx}px, ${ty}px) scale(${s})`);
+        } else if (e < 1.6) {
+          if (gator.alive) { gator.alive = false; gatorEl.style.display = 'none'; }
+          snake.mouth = 0.5;
+          snake.tail = 1;
+        } else if (e < 1.85) {
+          const p = (e - 1.6) / 0.25;
+          snake.mouth = lerp(0.5, 0, p);
+          snake.tail = 1 - p;
+          if (snake.gulpT < 0) snake.gulpT = 0;
+        } else {
+          snake.mouth = 0; snake.tail = 0;
+          snake.state = 'roam';
+          snake.bulgeU = 0.03;
+          pickRoamTarget();
+          setTimeout(() => caption.classList.add('show'), 900);
+        }
+        break;
+      }
+
+      case 'roam': {
+        // the lump works its way down
+        snake.bulgeA = Math.min(1, snake.bulgeA + dt * 2.5);
+        if (snake.bulgeU < 0.52) snake.bulgeU += dt * 0.11;
+        else snake.bulgeU = Math.min(0.62, snake.bulgeU + dt * 0.004);
+
+        const t = snake.target;
+        if (Math.hypot(t.x - snake.x, t.y - snake.y) < 40 * k) pickRoamTarget();
+        steer(snake.target.x, snake.target.y, 2.0, dt);
+        slither(72 * k, 0.55, dt); // food coma pace
+
+        // tongue flick every few seconds
+        snake.tongueT += dt;
+        if (snake.tongueT > 2.6) snake.tongueT = 0;
+        break;
+      }
+    }
+  }
+
+  // ---------- drawing ----------
+  function radiusAt(u) {
+    let taper;
+    if (u < 0.06) taper = lerp(0.78, 1, u / 0.06);
+    else if (u < 0.55) taper = 1;
+    else taper = lerp(1, 0.12, (u - 0.55) / 0.45);
+    return R * taper;
+  }
+
+  function bulgeAt(u) {
+    const sigma = 0.075;
+    return snake.bulgeA * R * 1.35 * Math.exp(-((u - snake.bulgeU) ** 2) / (2 * sigma * sigma));
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    if (snake.state === 'wait') return;
+
+    const f = headFrame();
+    const pts = f.pts, n = pts.length;
+    const base = pts.map((_, i) => radiusAt(i / N));
+    const radii = base.map((r, i) => r + bulgeAt(i / N));
+
+    // body silhouette: one path of overlapping circles, filled twice (outline, then skin)
+    const silhouette = grow => {
+      ctx.beginPath();
+      for (let i = n - 1; i >= 0; i--) {
+        const p = pts[i], r = radii[i] + grow;
+        ctx.moveTo(p.x + r, p.y);
+        ctx.arc(p.x, p.y, r, 0, TAU);
+      }
+    };
+    ctx.save();
+    ctx.shadowColor = 'rgba(31, 30, 20, 0.14)';
+    ctx.shadowBlur = 8 * k;
+    ctx.shadowOffsetY = 4 * k;
+    silhouette(1.6);
+    ctx.fillStyle = COLOR.outline;
+    ctx.fill();
+    ctx.restore();
+    silhouette(0);
+    ctx.fillStyle = COLOR.body;
+    ctx.fill();
+
+    // python saddles
+    const every = Math.max(2, Math.round(R * 1.35 / SP));
+    for (let i = every; i < n - 2; i += every) {
+      const u = i / N;
+      if (u < 0.07 || u > 0.93) continue;
+      const p = pts[i], q = pts[i - 1];
+      const ang = Math.atan2(p.y - q.y, p.x - q.x);
+      const r = base[i]; // skin stretches over the lump, spots don't grow
+      const side = ((i / every) % 2 ? 1 : -1) * r * 0.18;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(ang);
+      ctx.fillStyle = COLOR.blotch;
+      ctx.beginPath();
+      ctx.ellipse(0, side, r * 0.42, r * 0.6, 0, 0, TAU);
+      ctx.fill();
+      ctx.fillStyle = COLOR.spot;
+      ctx.beginPath();
+      ctx.ellipse(0, side, r * 0.12, r * 0.16, 0, 0, TAU);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    drawHead(f);
+    drawGulp(f);
+  }
+
+  function drawHead(f) {
+    const { Rh, hx, hy, dx, dy } = f;
+    const rx = Rh * 1.3, ry = Rh;
+    const a = snake.mouth * 0.8; // half-angle of the open jaw
+
+    ctx.save();
+    ctx.translate(hx, hy);
+    ctx.rotate(Math.atan2(dy, dx));
+
+    // tongue
+    if (snake.state === 'roam' && snake.mouth < 0.05 && snake.tongueT < 0.4) {
+      const out = Math.sin(snake.tongueT / 0.4 * Math.PI) * R * 1.5;
+      const base = rx * 0.9, fork = R * 0.35;
+      ctx.strokeStyle = COLOR.tongue;
+      ctx.lineWidth = Math.max(1.5, 2.2 * k);
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(base, 0);
+      ctx.lineTo(base + out, 0);
+      ctx.lineTo(base + out + fork * (out / (R * 1.5)), -fork * 0.6);
+      ctx.moveTo(base + out, 0);
+      ctx.lineTo(base + out + fork * (out / (R * 1.5)), fork * 0.6);
+      ctx.stroke();
+    }
+
+    const pie = (sx, sy, from, to) => {
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.ellipse(0, 0, sx, sy, 0, from, to);
+      ctx.closePath();
+    };
+
+    pie(rx + 1.6, ry + 1.6, a, TAU - a);
+    ctx.fillStyle = COLOR.outline;
+    ctx.fill();
+    pie(rx, ry, a, TAU - a);
+    ctx.fillStyle = COLOR.body;
+    ctx.fill();
+
+    if (a > 0.02) {
+      pie(rx * 0.95, ry * 0.95, -a * 0.92, a * 0.92);
+      ctx.fillStyle = COLOR.mouth;
+      ctx.fill();
+
+      // fangs at the front of each jaw
+      if (snake.mouth > 0.3) {
+        ctx.fillStyle = COLOR.fang;
+        for (const s of [-1, 1]) {
+          const jx = Math.cos(a) * rx * 0.86, jy = s * Math.sin(a) * ry * 0.86;
+          const ix = Math.cos(a * 0.55) * rx * 0.78, iy = s * Math.sin(a * 0.55) * ry * 0.78;
+          ctx.beginPath();
+          ctx.moveTo(jx, jy);
+          ctx.lineTo(jx - R * 0.28, jy);
+          ctx.lineTo(ix, iy);
+          ctx.closePath();
+          ctx.fill();
+        }
+      }
+    }
+
+    // gator tail still sticking out, wiggling
+    if (snake.tail > 0) {
+      const len = R * 3.2 * snake.tail;
+      const wig = Math.sin(snake.t * 28) * R * 0.5 * snake.tail;
+      ctx.fillStyle = COLOR.gator;
+      ctx.beginPath();
+      ctx.moveTo(rx * 0.25, -ry * 0.42);
+      ctx.quadraticCurveTo(rx * 0.25 + len * 0.6, -ry * 0.3 + wig * 0.4, rx * 0.25 + len, wig);
+      ctx.quadraticCurveTo(rx * 0.25 + len * 0.6, ry * 0.3 + wig * 0.4, rx * 0.25, ry * 0.42);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // nostrils
+    if (snake.mouth < 0.15) {
+      ctx.fillStyle = COLOR.outline;
+      for (const s of [-1, 1]) {
+        ctx.beginPath();
+        ctx.arc(rx * 0.8, s * ry * 0.22, Math.max(1, R * 0.06), 0, TAU);
+        ctx.fill();
+      }
+    }
+
+    // eyes: same style as the gator's, for continuity
+    for (const s of [-1, 1]) {
+      const ex = rx * 0.25, ey = s * ry * 0.62;
+      ctx.fillStyle = COLOR.body;
+      ctx.beginPath(); ctx.arc(ex, ey, R * 0.42, 0, TAU); ctx.fill();
+      ctx.fillStyle = COLOR.eye;
+      ctx.beginPath(); ctx.arc(ex, ey, R * 0.3, 0, TAU); ctx.fill();
+      ctx.fillStyle = COLOR.pupil;
+      ctx.beginPath(); ctx.arc(ex + R * 0.1, ey, R * 0.15, 0, TAU); ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function drawGulp(f) {
+    if (snake.gulpT < 0 || snake.gulpT > 1.6) return;
+    const t = snake.gulpT / 1.6;
+    ctx.save();
+    ctx.globalAlpha = t < 0.2 ? t / 0.2 : 1 - (t - 0.2) / 0.8;
+    ctx.fillStyle = COLOR.muted;
+    ctx.font = `italic 600 ${Math.round(Math.max(13, 18 * k))}px Figtree, ui-sans-serif, system-ui, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillText('gulp.', f.hx, f.hy - R * 2.2 - t * 30 * k);
+    ctx.restore();
+  }
+
+  // ---------- reduced motion: just show the aftermath ----------
+  function drawAftermath() {
+    layout();
+    gatorEl.style.display = 'none';
+    caption.classList.add('show');
+    snake.state = 'roam';
+    snake.bulgeU = 0.55; snake.bulgeA = 1; snake.tongueT = 1;
+    snake.hist = [];
+    const x0 = W / 2 - L * 0.45, x1 = W / 2 + L * 0.45;
+    for (let x = x0; x <= x1; x += 1) {
+      snake.hist.push({ x, y: H / 2 + 26 * k * Math.sin((x - x0) / (70 * k)) });
+    }
+    const last = snake.hist[snake.hist.length - 1];
+    snake.x = last.x; snake.y = last.y;
+    draw();
+  }
+
+  if (reduceMotion) {
+    drawAftermath();
+    addEventListener('resize', drawAftermath);
+    return;
+  }
+
+  // ---------- go ----------
+  layout();
+  gator.x = pad;
+  placeGator();
+  spawnSnake();
+  addEventListener('resize', layout);
+
+  // Tap/click anywhere to send the snake somewhere (once it's done eating).
+  addEventListener('pointerdown', e => {
+    if (snake.state === 'roam') snake.target = { x: e.clientX, y: e.clientY };
+  });
+
+  function step(dt) {
+    if (gator.alive && snake.state !== 'eat') stepGator(dt);
+    stepSnake(dt);
+  }
+
+  // ?t=8 fast-forwards the scene (handy for screenshots)
+  const skip = parseFloat(new URLSearchParams(location.search).get('t'));
+  if (skip > 0) for (let s = 0; s < skip; s += 1 / 60) step(1 / 60);
+
+  let prev = performance.now();
+  function frame(now) {
+    const dt = Math.min(1 / 30, (now - prev) / 1000);
+    prev = now;
+    step(dt);
+    draw();
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
